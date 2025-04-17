@@ -8,8 +8,7 @@ This is a collection of Maya plugins to help with rigging and other stuff!
 
 Rigs any 3 joint limb.
 * Auto find joints
-*  Control the controller size
+* Control the controller size
 * control the controller color
+* set controller color post auto rig
 * modular aproach
-  
-## Proxy Rigger
