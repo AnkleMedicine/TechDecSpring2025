@@ -1,5 +1,6 @@
 from MayaUtil import IsJoint, IsMesh, QMayaWindow
-from PySide2.QtWidgets import QListWidget, QMessageBox, QPushButton, QVBoxLayout, QLineEdit
+from PySide2.QtGui import QIntValidator, QRegExpValidator
+from PySide2.QtWidgets import QCheckBox, QHBoxLayout, QLabel, QListWidget, QMessageBox, QPushButton, QVBoxLayout, QLineEdit, QWidget
 import maya.cmds as mc
 
 def TryAction(action):
@@ -11,10 +12,18 @@ def TryAction(action):
     
     return wrapper
 
+class AnimCLip:
+     def __init__(self):
+        self.subfix = ""
+        self.frameMin = mc.playbackOptions(q=True, min=True)
+        self.frameMax = mc.playbackOptions(q=True, max=True)
+        self.shouldExport = True
+
 class MayaToUE:
     def __init__(self):
         self.rootJnt = ""
         self.meshes = []
+        self.animationClips : list[AnimCLip] = []
 
     def SetSelectedAsRootJnt(self):
         selection = mc.ls(sl=True)
@@ -56,6 +65,42 @@ class MayaToUE:
             raise Exception("No Mesh Selected")
         
         self.meshes = list(meshes)
+
+class AnimClipEntryWidget(QWidget):
+    def __init__(self, animClip: AnimCLip):
+        super().__init__()
+        self.animClip = animClip
+        self.masterLayout = QHBoxLayout()
+        self.setLayout(self.masterLayout)
+
+        shouldExportCheckbox = QCheckBox()
+        shouldExportCheckbox.setChecked(self.animClip.shouldExport)
+        self.masterLayout.addWidget(shouldExportCheckbox)
+        shouldExportCheckbox.toggled.connect(self.ShouldExportCheckBoxToggled)
+
+        self.masterLayout.addWidget(QLabel("Subfix: "))
+
+        subfixLineEdit = QLineEdit()
+        subfixLineEdit.setValidator(QRegExpValidator("[a-zA-Z0-9_]+"))
+        subfixLineEdit.setText(self.animClip.subfix)
+        subfixLineEdit.textChanged.connect(self.SubfixTextChanged)
+        self.masterLayout.addWidget(subfixLineEdit)
+
+        self.masterLayout.addWidget(QLabel("Min: "))
+        minFrameLineEdit = QLineEdit()
+        minFrameLineEdit.setValidator(QIntValidator())
+        minFrameLineEdit.setText(str(int(self.animClip.frameMin)))
+        minFrameLineEdit.textChanged.connect(self.MinFrameChanged)
+        self.masterLayout.addWidget(minFrameLineEdit)
+
+    def MinFrameChanged(self, newVal):
+        self.animClip.frameMin = int(newVal)
+
+    def SubfixTextChanged(self, newText):
+        self.animClip.subfix = newText
+
+    def ShouldExportCheckBoxToggled(self):
+        self.animClip.shouldExport = not self.animClip.shouldExport
 
 class MayaToUEWidget(QMayaWindow):
     def GetWindowHash(self):
