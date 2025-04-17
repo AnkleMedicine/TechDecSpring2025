@@ -1,10 +1,11 @@
-from MayaUtil import IsJoint, QMayaWindow
-from PySide2.QtWidgets import QMessageBox, QPushButton, QVBoxLayout, QLineEdit
+from MayaUtil import IsJoint, IsMesh, QMayaWindow
+from PySide2.QtWidgets import QListWidget, QMessageBox, QPushButton, QVBoxLayout, QLineEdit
 import maya.cmds as mc
 
 class MayaToUE:
     def __init__(self):
         self.rootJnt = ""
+        self.meshes = []
 
     def SetSelectedAsRootJnt(self):
         selection = mc.ls(sl=True)
@@ -31,6 +32,22 @@ class MayaToUE:
         mc.parent(self.rootJnt, rootJntName)
         self.rootJnt = rootJntName
 
+    def AddMeshes(self):
+        selection = mc.ls(sl=True)
+        if not selection:
+            raise Exception("No Mesh Selected")
+        
+        meshes = set()
+
+        for sel in selection:
+            if IsMesh(sel):
+                meshes.add(sel)
+
+        if len(meshes) == 0:
+            raise Exception("No Mesh Selected")
+        
+        self.meshes = list(meshes)
+
 class MayaToUEWidget(QMayaWindow):
     def GetWindowHash(self):
         return "MayatoUE417204745ARM"
@@ -55,6 +72,21 @@ class MayaToUEWidget(QMayaWindow):
         addRootJntBtn.clicked.connect(self.AddRootJntButtonCLicked)
         self.masterLayout.addWidget(addRootJntBtn)
 
+        self.meshList = QListWidget()
+        self.masterLayout.addWidget(self.meshList)
+        self.meshList.setFixedHeight(80)
+        addMeshBtn = QPushButton("Add Meshes")
+        addMeshBtn.clicked.connect(self.AddMeshButtonCLicked)
+        self.masterLayout.addWidget(addMeshBtn)
+
+    def AddMeshButtonCLicked(self):
+        try:
+            self.mayaToUE.AddMeshes()
+            self.meshList.clear()
+            self.meshList.addItems(self.mayaToUE.meshes)
+        except Exception as e:
+            QMessageBox().critical(self, "Error", f"{e}")
+    
     def AddRootJntButtonCLicked(self):
         try:
             self.mayaToUE.AddRootJoint()
