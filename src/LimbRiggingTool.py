@@ -11,8 +11,10 @@ from PySide2.QtWidgets import (QColorDialog, QHBoxLayout,
                                QPushButton,
                                QWidget,
                                QVBoxLayout,
+                               QHBoxLayout,
                                QLabel,
                                QSlider,
+                               QMainWindow
                                ) # imports all the widgets needed to build our UI
 from PySide2.QtCore import Qt # has some values we can use to configure our widget like window type, or orientation
 from MayaUtil import QMayaWindow
@@ -110,11 +112,14 @@ class LimbRigger: # limb rigger tool
        mc.expression(s=f"{ikHandleName}.ikBlend = {ikfkBlendAttr}")
        mc.expression(s=f"{ikEndCtrlGrp}.v = {ikPoleVectorCtrlGrp}.v = {ikfkBlendAttr}")
        mc.expression(s=f"{rootFKCtrlGrp}.v = 1 - {ikfkBlendAttr}")
-       mc.expression(s=f"{endOrientConstraint}.{endFKCtrl}w0 = 1-{ikfkBlendAttr}")
-       mc.expression(s=f"{endOrientConstraint}.{ikEndCtrl}w1 = {ikfkBlendAttr}")
+       mc.expression(s=f"{endOrientConstraint}.{endFKCtrl}W0 = 1-{ikfkBlendAttr}")
+       mc.expression(s=f"{endOrientConstraint}.{ikEndCtrl}W1 = {ikfkBlendAttr}")
+
+       mc.parent(ikHandleName, ikEndCtrl)
+       mc.setAttr(ikHandleName+".v", 0)
 
        topGrpName = self.root + "_rig_grp"
-       mc.group([rootFKCtrlGrp, ikEndCtrlGrp, ikPoleVectorCtrlGrp, ikfkBlendCtrlGrp], n= topGrpName)
+       mc.group([rootFKCtrlGrp,ikEndCtrlGrp, ikPoleVectorCtrlGrp, ikfkBlendCtrlGrp], n= topGrpName)
        mc.setAttr(topGrpName+".overrideEnabled", 1)
        mc.setAttr(topGrpName+".overrideRGBColors", 1)
        mc.setAttr(topGrpName+".overrideColorRGB", r, g, b, type="double3")
