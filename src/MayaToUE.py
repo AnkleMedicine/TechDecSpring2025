@@ -2,6 +2,15 @@ from MayaUtil import IsJoint, IsMesh, QMayaWindow
 from PySide2.QtWidgets import QListWidget, QMessageBox, QPushButton, QVBoxLayout, QLineEdit
 import maya.cmds as mc
 
+def TryAction(action):
+    def wrapper(*args, **kwargs):
+        try:
+            action(*args, **kwargs)
+        except Exception as e:
+            QMessageBox().critical(None, "Error", f"{e}")
+    
+    return wrapper
+
 class MayaToUE:
     def __init__(self):
         self.rootJnt = ""
@@ -79,27 +88,22 @@ class MayaToUEWidget(QMayaWindow):
         addMeshBtn.clicked.connect(self.AddMeshButtonCLicked)
         self.masterLayout.addWidget(addMeshBtn)
 
+
+    @TryAction
     def AddMeshButtonCLicked(self):
-        try:
             self.mayaToUE.AddMeshes()
             self.meshList.clear()
             self.meshList.addItems(self.mayaToUE.meshes)
-        except Exception as e:
-            QMessageBox().critical(self, "Error", f"{e}")
     
+    @TryAction
     def AddRootJntButtonCLicked(self):
-        try:
             self.mayaToUE.AddRootJoint()
             self.rootJntText.setText(self.mayaToUE.rootJnt)
-        except Exception as e:
-            QMessageBox().critical(self, "Error", f"{e}")
 
+    @TryAction
     def SetSelectionAsRootJointBtnClicked(self):
-        try:
             self.mayaToUE.SetSelectedAsRootJnt()
             self.rootJntText.setText(self.mayaToUE.rootJnt)
-        except Exception as e:
-            QMessageBox().critical(self, "Error", f"{e}")
 
 
 MayaToUEWidget().show()
