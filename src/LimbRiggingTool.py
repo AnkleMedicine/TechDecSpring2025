@@ -26,6 +26,7 @@ class LimbRigger: # limb rigger tool
         self.mid = ""
         self.end = ""
         self.controllerSize = 5
+        self.controllerColor = (0,0,0)
 
     def AutoFindJnts(self):
         self.root = mc.ls(sl=True, type="joint")[0] # finds the root joint
@@ -66,6 +67,15 @@ class LimbRigger: # limb rigger tool
     
     def PrintMVector(self, vectorToPrint):
         print(f"<{vectorToPrint.x}, {vectorToPrint.y}, {vectorToPrint.z}>")
+
+    def SetCtrlColor(self,ctrlName):
+        shapes = mc.listRelatives(ctrlName, shapes=True, type="nurbsCurve")
+        if not shapes:
+            return
+        for shape in shapes:
+            mc.setAttr(f"{shape}.overrideEnabled", 1)
+            mc.setAttr(f"{shape}.overrideRGBColors", 1)
+            mc.setAttr(f"{shape}.overrideColorRGB", self.controllerColor[0], self.controllerColor[1], self.controllerColor[2])
 
     def RigLimb(self, r, g, b):
        rootFKCtrl, rootFKCtrlGrp = self.CreateFKControlForJnt(self.root) # creates the FK Controler for root jnt
@@ -174,6 +184,10 @@ class LimbRigToolWidget(QMayaWindow): #Limb rigger UI Window
         self.colorPicker = ColorPicker()
         self.masterLayout.addWidget(self.colorPicker)
 
+        self.setColorBtn = QPushButton("Set Ctrl Color")
+        self.masterLayout.addWidget(self.setColorBtn)
+        self.setColorBtn.clicked.connect(self.SetColorBtnClicked)
+
         self.rigLimbBtn = QPushButton("Rig Limb") # creates and names the rig limb button
         self.masterLayout.addWidget(self.rigLimbBtn) # adds the rig limb button to the window
         self.rigLimbBtn.clicked.connect(self.RigLimbBtnClicked) # when the button is clicked it runs the RigLimbBtnClicked function
@@ -186,6 +200,13 @@ class LimbRigToolWidget(QMayaWindow): #Limb rigger UI Window
     
     def RigLimbBtnClicked(self):
         self.rigger.RigLimb(self.colorPicker.color.redF(), self.colorPicker.color.greenF(), self.colorPicker.color.blueF()) #runs the RigLimb function 
+
+    def SetColorBtnClicked(self):
+        print("Self Color Button Cicked!")
+        color = self.colorPicker.color
+        self.rigger.controllerColor = (color.redF(), color.greenF(), color.blueF())
+        ctrl = mc.ls(sl=True)
+        self.rigger.SetCtrlColor(ctrl[0])
 
     def AutoFindBtnClicked(self):
         try:
