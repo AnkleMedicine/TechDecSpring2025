@@ -1,7 +1,7 @@
 from MayaUtil import IsJoint, IsMesh, QMayaWindow
 from PySide2.QtCore import Signal
 from PySide2.QtGui import QIntValidator, QRegExpValidator
-from PySide2.QtWidgets import QCheckBox, QHBoxLayout, QLabel, QListWidget, QMessageBox, QPushButton, QVBoxLayout, QLineEdit, QWidget
+from PySide2.QtWidgets import QCheckBox, QFileDialog, QHBoxLayout, QLabel, QListWidget, QMessageBox, QPushButton, QVBoxLayout, QLineEdit, QWidget
 import maya.cmds as mc
 
 def TryAction(action):
@@ -25,6 +25,8 @@ class MayaToUE:
         self.rootJnt = ""
         self.meshes = []
         self.animationClips : list[AnimCLip] = []
+        self.fileName = ""
+        self.saveDir = ""
 
     def RemoveAnimClip(self, clipToRemove: AnimCLip):
         self.animationClips.remove(clipToRemove)
@@ -179,7 +181,37 @@ class MayaToUEWidget(QMayaWindow):
         self.animEntrylayout = QVBoxLayout()
         self.masterLayout.addLayout(self.animEntrylayout)
 
+        self.saveFileLayout = QHBoxLayout()
+        self.masterLayout.addLayout(self.saveFileLayout)
+        fileNameLabel = QLabel("File Name: ")
+        self.saveFileLayout.addWidget(fileNameLabel)
 
+        self.fileNameLineEdit = QLineEdit()
+        self.fileNameLineEdit.setFixedWidth(120)
+        self.fileNameLineEdit.setValidator(QRegExpValidator("\w+"))
+        self.fileNameLineEdit.textChanged.connect(self.FileNameLineEditChanged)
+        self.saveFileLayout.addWidget(self.fileNameLineEdit)
+
+        self.directoryLabel = QLabel("Save Directory: ")
+        self.saveFileLayout.addWidget(self.directoryLabel)
+        self.saveDirectoryLineEdit = QLineEdit()
+        self.saveDirectoryLineEdit.setEnabled(False)
+        self.saveFileLayout.addWidget(self.saveDirectoryLineEdit)
+        self.pickDirBtn = QPushButton("...")
+        self.pickDirBtn.clicked.connect(self.PickDirBtnClicked)
+        self.saveFileLayout.addWidget(self.pickDirBtn)
+
+    @TryAction
+    def PickDirBtnClicked(self):
+        path = QFileDialog().getExistingDirectory()
+        self.saveDirectoryLineEdit.setText(path)
+        self.mayaToUE.saveDir = path
+
+    @TryAction
+    def FileNameLineEditChanged(self, newText):
+        self.mayaToUE.fileName = newText
+
+    @TryAction
     def AddNewAnimClipEntryBtnClicked(self):
         newEntry = self.mayaToUE.AddNewAnimEntry()
         newEntryWidget = AnimClipEntryWidget(newEntry)
