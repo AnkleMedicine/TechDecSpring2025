@@ -1,3 +1,4 @@
+import os
 from MayaUtil import IsJoint, IsMesh, QMayaWindow
 from PySide2.QtCore import Signal
 from PySide2.QtGui import QIntValidator, QRegExpValidator
@@ -27,6 +28,18 @@ class MayaToUE:
         self.animationClips : list[AnimCLip] = []
         self.fileName = ""
         self.saveDir = ""
+
+    def GetAnimDirPath(self):
+        path = os.path.join(self.saveDir, "Animations")
+        return os.path.normpath(path)
+
+    def GetSavePathForAnimClip(self, animClip: AnimCLip):
+        path = os.path.join(self.GetAnimDirPath(), self.fileName + animClip.subfix + ".fbx")
+        return os.path.normpath(path)
+
+    def GetSkeletalMeshSavePath(self):
+        path = os.path.join(self.saveDir, self.fileName + ".fbx")
+        return os.path.normpath(path)
 
     def RemoveAnimClip(self, clipToRemove: AnimCLip):
         self.animationClips.remove(clipToRemove)
@@ -201,15 +214,33 @@ class MayaToUEWidget(QMayaWindow):
         self.pickDirBtn.clicked.connect(self.PickDirBtnClicked)
         self.saveFileLayout.addWidget(self.pickDirBtn)
 
+        self.savePreveiwLabel = QLabel("")
+        self.masterLayout.addWidget(self.savePreveiwLabel)
+
+    def UpdateSavePreviewLabel(self):
+        previewText = self.mayaToUE.GetSkeletalMeshSavePath()
+        if not self.mayaToUE.animationClips:
+            self.savePreveiwLabel.setText(previewText)
+            return
+        
+        for animClip in self.mayaToUE.animationClips:
+            animSavePath = self.mayaToUE.GetSavePathForAnimClip(animClip)
+            previewText += "\n" + animSavePath
+
+        self.savePreveiwLabel.setText(previewText)
+
+
     @TryAction
     def PickDirBtnClicked(self):
         path = QFileDialog().getExistingDirectory()
         self.saveDirectoryLineEdit.setText(path)
         self.mayaToUE.saveDir = path
+        self.UpdateSavePreviewLabel()
 
     @TryAction
     def FileNameLineEditChanged(self, newText):
         self.mayaToUE.fileName = newText
+        self.UpdateSavePreviewLabel()
 
     @TryAction
     def AddNewAnimClipEntryBtnClicked(self):
@@ -217,10 +248,12 @@ class MayaToUEWidget(QMayaWindow):
         newEntryWidget = AnimClipEntryWidget(newEntry)
         newEntryWidget.entryRemoved.connect(self.AnimationClipEvtryRemoved)
         self.animEntrylayout.addWidget(newEntryWidget)
+        self.UpdateSavePreviewLabel()
 
     @TryAction
     def AnimationClipEvtryRemoved(self, animClip: AnimCLip):
         self.mayaToUE.RemoveAnimClip(animClip)
+        self.UpdateSavePreviewLabel()
 
     @TryAction
     def AddMeshButtonCLicked(self):
