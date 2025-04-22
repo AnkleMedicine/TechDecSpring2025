@@ -1,4 +1,5 @@
 from MayaUtil import IsJoint, IsMesh, QMayaWindow
+from PySide2.QtCore import Signal
 from PySide2.QtGui import QIntValidator, QRegExpValidator
 from PySide2.QtWidgets import QCheckBox, QHBoxLayout, QLabel, QListWidget, QMessageBox, QPushButton, QVBoxLayout, QLineEdit, QWidget
 import maya.cmds as mc
@@ -25,8 +26,13 @@ class MayaToUE:
         self.meshes = []
         self.animationClips : list[AnimCLip] = []
 
+    def RemoveAnimClip(self, clipToRemove: AnimCLip):
+        self.animationClips.remove(clipToRemove)
+        print(f"Animatin Clip Removed, now we have: {len(self.animationClips)} left")
+
     def AddNewAnimEntry(self):
         self.animationClips.append(AnimCLip())
+        print(f"Animatin Clip added, now we have: {len(self.animationClips)}")
         return self.animationClips[-1]
 
     def SetSelectedAsRootJnt(self):
@@ -71,6 +77,7 @@ class MayaToUE:
         self.meshes = list(meshes)
 
 class AnimClipEntryWidget(QWidget):
+    entryRemoved = Signal(AnimCLip)
     def __init__(self, animClip: AnimCLip):
         super().__init__()
         self.animClip = animClip
@@ -115,6 +122,7 @@ class AnimClipEntryWidget(QWidget):
 
 
     def DeleteButtonClicked(self):
+        self.entryRemoved.emit(self.animClip)
         self.deleteLater()
 
     def SetRangeButtonCLicked(self):
@@ -174,7 +182,13 @@ class MayaToUEWidget(QMayaWindow):
 
     def AddNewAnimClipEntryBtnClicked(self):
         newEntry = self.mayaToUE.AddNewAnimEntry()
-        self.animEntrylayout.addWidget(AnimClipEntryWidget(newEntry))
+        newEntryWidget = AnimClipEntryWidget(newEntry)
+        newEntryWidget.entryRemoved.connect(self.AnimationClipEvtryRemoved)
+        self.animEntrylayout.addWidget(newEntryWidget)
+
+    @TryAction
+    def AnimationClipEvtryRemoved(self, animClip: AnimCLip):
+        self.mayaToUE.RemoveAnimClip(animClip)
 
     @TryAction
     def AddMeshButtonCLicked(self):
