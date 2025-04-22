@@ -29,6 +29,49 @@ class MayaToUE:
         self.fileName = ""
         self.saveDir = ""
 
+    def GetAllJoints(self):
+        jnts = []
+        jnts.append(self.rootJnt)
+        children = mc.listRelatives(self.rootJnt, c=True, ad=True, type="joint")
+        if children:
+            jnts.extend(children)
+
+        return jnts
+
+    def SaveFiles(self):
+        allJnts = self.GetAllJoints()
+        allMeshes = self.meshes
+
+        allObjectToExport = allJnts + allMeshes
+        mc.select(allObjectToExport, r=True)
+
+        skeletalMeshExportPath = self.GetSkeletalMeshSavePath()
+
+        mc.FBXResetExport()
+        mc.FBXExportSmoothingGroups('-v', True)
+        mc.FBXExportInputConnections('-v', False)
+
+        mc.FBXExport('-f', skeletalMeshExportPath, '-s', True, '-ea', False) # -f means file name, -s means export selected, -ea means export animation
+
+        os.makedirs(self.GetAnimDirPath(), exist_ok=True)
+        mc.FBXExportBakeComplexANimation('-v', True)
+        for animClip in self.animationClips:
+            if not animClip.shouldExport:
+                continue
+
+            animExportPath = self.GetSavePathForAnimClip(animClip)
+
+            startFrame = animClip.frameMin
+            endFrame = animClip.frameMax
+
+            mc.FBXExportBakeComplexStart('-v', startFrame)
+            mc.FBXExportBakeComplexEnd('-v', endFrame)
+            mc.FBXExportBakeComplexStep('-v', 1)
+
+            mc.playbackOptions(e=True, min = startFrame, max = endFrame)
+            mc.FBXExport('-f', animExportPath, '-s', True, '-ea', True)
+
+
     def GetAnimDirPath(self):
         path = os.path.join(self.saveDir, "Animations")
         return os.path.normpath(path)
@@ -218,6 +261,13 @@ class MayaToUEWidget(QMayaWindow):
 
         self.savePreveiwLabel = QLabel("")
         self.masterLayout.addWidget(self.savePreveiwLabel)
+
+        saveFileBtn = QPushButton("Save Files")
+        saveFileBtn.clicked.connect(self.SaveFilesButtonCLicked)
+        self.masterLayout.addWidget(saveFileBtn)
+
+    def SaveFilesButtonCLicked(self):
+        self.mayaToUE.SaveFiles()
 
     def UpdateSavePreviewLabel(self):
         previewText = self.mayaToUE.GetSkeletalMeshSavePath()
