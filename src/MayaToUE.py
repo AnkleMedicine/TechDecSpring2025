@@ -54,7 +54,7 @@ class MayaToUE:
         mc.FBXExport('-f', skeletalMeshExportPath, '-s', True, '-ea', False) # -f means file name, -s means export selected, -ea means export animation
 
         os.makedirs(self.GetAnimDirPath(), exist_ok=True)
-        mc.FBXExportBakeComplexANimation('-v', True)
+        mc.FBXExportBakeComplexAnimation('-v', True)
         for animClip in self.animationClips:
             if not animClip.shouldExport:
                 continue
