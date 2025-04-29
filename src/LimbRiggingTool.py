@@ -215,8 +215,8 @@ class LimbRigToolWidget(QMayaWindow): #Limb rigger UI Window
         except Exception as e:
             QMessageBox.critical(self, "Error", "Wrong Selection, please select the frist joint of the limb!") # shows error message to user if they dont click the root joint when using the autofind btn
 
-
-limbRigToolWidget = LimbRigToolWidget()
-limbRigToolWidget.show()
+def Run():
+    limbRigToolWidget = LimbRigToolWidget()
+    limbRigToolWidget.show()
 
 #HW: comment on each line what they do

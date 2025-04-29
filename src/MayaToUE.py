@@ -5,6 +5,7 @@ from PySide2.QtGui import QIntValidator, QRegExpValidator
 from PySide2.QtWidgets import QCheckBox, QFileDialog, QHBoxLayout, QLabel, QListWidget, QMessageBox, QPushButton, QVBoxLayout, QLineEdit, QWidget
 import maya.cmds as mc
 import MayaTools
+import remote_execution
 
 def TryAction(action):
     def wrapper(*args, **kwargs):
@@ -75,7 +76,7 @@ class MayaToUE:
         self.SendToUnreal()
 
     def SendToUnreal(self):
-        ueUtilPath = os.path.join(MayaTools.srsDir, "UnrealUtils.py")
+        ueUtilPath = os.path.join(MayaTools.srcDir, "UnrealUtils.py")
         ueUtilPath = os.path.normpath(ueUtilPath)
 
         meshPath = self.GetSkeletalMeshSavePath().replace("\\", "/")
@@ -85,10 +86,16 @@ class MayaToUE:
         with open(ueUtilPath, 'r') as ueUtilityFile:
             commands = ueUtilityFile.readlines()
 
-        command.apend(f"ImportMeshAndAnimation(\'{meshPath}\', \'{animDir}')")
+        commands.append(f"\nImportMeshAndAnimation(\'{meshPath}\', \'{animDir}')")
 
         command = "".join(commands)
         print(command)
+
+        remoteExc = remote_execution.RemoteExecution()
+        remoteExc.start()
+        remoteExc.open_command_connection(remoteExc.remote_nodes)
+        remoteExc.run_command(command)
+        remoteExc.stop()
 
 
     def GetAnimDirPath(self):
@@ -343,6 +350,5 @@ class MayaToUEWidget(QMayaWindow):
             self.mayaToUE.SetSelectedAsRootJnt()
             self.rootJntText.setText(self.mayaToUE.rootJnt)
 
-
-MayaToUEWidget().show()
-# AnimClipEntryWidget(AnimCLip()).show()
+def Run():
+    MayaToUEWidget().show()
